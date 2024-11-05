@@ -7,7 +7,7 @@ import random
 import math
 import numpy as np
 
-class Preprocess:
+class PreProcess:
     def __init__(self, train_rate, eval_rate, test_rate):
         self.train_rate = train_rate
         self.eval_rate = eval_rate
@@ -32,17 +32,17 @@ class Preprocess:
         return len(data)
 
 
-    def preprocess_points(self, folder_path, output_path, predictionFutureFrame, target_cols):
+    def preprocess_edit(self, input_path, output_path, pred_future_frame, target_cols):
         # フォルダ内のすべてのファイルとディレクトリを取得
 
-        files = os.listdir(folder_path)
+        files = os.listdir(input_path)
         target_files = []
         header = None
 
 
         for fileIndex in tqdm.tqdm(range(len(files))):
             # ファイルの絶対パスを取得
-            file_path = os.path.join(folder_path, files[fileIndex])
+            file_path = os.path.join(input_path, files[fileIndex])
             with open(file_path, 'r') as csvfile:
                 # CSVファイルを読み込み
                 reader = csv.reader(csvfile)
@@ -82,13 +82,13 @@ class Preprocess:
                     data = [[row[idx] for idx in column_indices] for row in data]
 
                 
-                for frameIndex in range(16,len(data)):
-                    if frameIndex + predictionFutureFrame < len(data):
+                for frameIndex in range(2,len(data)):
+                    if frameIndex + pred_future_frame < len(data):
                         #過去15フレームをとってきてデータとする
                         strX = data[frameIndex - 15 : frameIndex]
                         #print(strX[0])
                         #predictionFutureFrameフレーム後の未来を持ってきて正解データとする
-                        strY = data[frameIndex + predictionFutureFrame]
+                        strY = data[frameIndex + pred_future_frame]
 
                         X = [list(map(float, row)) for row in strX]
                         flattenX = [elem for sublist in X for elem in sublist]
