@@ -46,7 +46,7 @@ class StockPriceLSTM(nn.Module):
         x = nn.functional.relu(self.fc2(x))
         return x
 
-#PositionalEncoding用のクラスも作成
+
 # Functions for positional encoding
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len, dropout):
