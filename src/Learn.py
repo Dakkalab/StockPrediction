@@ -19,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 class Learn:
     def __init__(self, points_num, frames_num,  pred_future_frame, batch_size, modelSaveSpan):
         #諸パラメータの設定
-        self.piunts_num = points_num
+        self.points_num = points_num
         self.frames_num = frames_num
         self.batch_size = batch_size
         self.pred_future_fame = pred_future_frame
@@ -29,7 +29,7 @@ class Learn:
         self.cogWeight = 1.0
         self.relPosWeight = 1.0
         self.d = self.present_time()
-        self.ModelFolderPath = "Models/Models" + "_" + str(self.pred_future_frame) + "_" + str(self.d)
+        self.ModelFolderPath = "Models/Models" + "_" + str(pred_future_frame) + "_" + str(self.d)
         self.writerPath = 'runs/' + ("Aug_" if self.useAugmentation else "") + ("CF_" if self.useCustomLossFunction else "") + str(pred_future_frame) + "_" + self.d
         print("tensorboard --logdir=" + self.writerPath)
         #解析用のやつ
@@ -103,6 +103,7 @@ class Learn:
             return (X, Y)
         else:
             print('the class imported from DataSets.py can not be compatible to this loader.')
+            print(f'the DataSetsClass is {DataSetsClass}')
 
     
     def network_forLSTM(self, learning_Model, lr, weight_decay):
