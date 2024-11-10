@@ -32,7 +32,7 @@ class PreProcess:
         return len(data)
 
 
-    def preprocess_edit(self, input_path, output_path, pred_future_frame, target_cols):
+    def preprocess_edit(self, input_path, output_path, frames_num, pred_future_frame, target_cols):
         # フォルダ内のすべてのファイルとディレクトリを取得
 
         files = os.listdir(input_path)
@@ -80,18 +80,21 @@ class PreProcess:
                 #カラム指定がある場合
                 if target_cols:
                     data = [[row[idx] for idx in column_indices] for row in data]
+                    #print(len(data))
 
                 
-                for frameIndex in range(2,len(data)):
+                for frameIndex in range(frames_num,len(data)):
                     if frameIndex + pred_future_frame < len(data):
-                        #過去15フレームをとってきてデータとする
-                        strX = data[frameIndex - 15 : frameIndex]
+                        #1フレームをとってきてデータとする
+                        strX = data[frameIndex - frames_num : frameIndex]
+                        num_matrix = [[float(value) for value in row] for row in strX]
                         #print(strX[0])
                         #predictionFutureFrameフレーム後の未来を持ってきて正解データとする
                         strY = data[frameIndex + pred_future_frame]
-
-                        X = [list(map(float, row)) for row in strX]
-                        flattenX = [elem for sublist in X for elem in sublist]
+                        numY = [float(value) for value in strY]
+                        # print(strY)
+                        X = num_matrix#list(map(float, num_matrix))
+                        #flattenX = [elem for sublist in X for elem in sublist]
                         r = random.random()
                         if r < self.train_rate:
                             mode = "Train"
@@ -99,8 +102,8 @@ class PreProcess:
                             mode = "Eval"
                         else:
                             mode = "Test"
-                        Y = list(map(float, strY))
-                        torch.save(torch.tensor(flattenX),os.path.join(output_path,mode,"X",str(self.dataCount[mode])+".pt"))
+                        Y = numY#list(map(float, numY))
+                        torch.save(torch.tensor(X),os.path.join(output_path,mode,"X",str(self.dataCount[mode])+".pt"))
                         torch.save(torch.tensor(Y),os.path.join(output_path,mode,"Y",str(self.dataCount[mode])+".pt"))
                         self.dataCount[mode] += 1
 

@@ -34,7 +34,7 @@ class StockPriceLSTM(nn.Module):
                             dropout = dropout)
         self.hidden_size = hidden_size
         self.seq_len = seq_len
-        central_neuron = (hidden_size*seq_len + output_size)/2 #真ん中のニューロン数
+        central_neuron = int((hidden_size*seq_len + output_size)/2) #真ん中のニューロン数
         self.fc1 = nn.Linear(hidden_size*seq_len, central_neuron)
         self.fc2 = nn.Linear(central_neuron, output_size)
 

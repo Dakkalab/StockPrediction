@@ -150,77 +150,6 @@ class SelectedPointsHumanPoseDataFolder(Dataset):
         return len(self.dataPathListX)
     
 
-
-class SelectedPointsHumanPoseDataFolder_forRNN(Dataset):
-    def __init__(self, dataDir, points_num, frames_num):
-        self.points_num = points_num
-        self.frames_num = frames_num
-        self.dataDir = dataDir
-        self.dirX = os.path.join(dataDir, "X")
-        self.dirY = os.path.join(dataDir, "Y")
-        filesX = os.listdir(self.dirX)
-        filesY = os.listdir(self.dirY)
-        self.dataPathListX = []
-        self.dataPathListY = []
-        self.dataX = []
-        self.dataY = []
-
-        # 各軸に対してフラグを設定
-        self.dirX_in = torch.zeros(self.frames_num, self.points_num)
-        self.dirZ_in = torch.zeros(self.frames_num, self.points_num)
-        self.dirX_out = torch.zeros(self.points_num)
-        self.dirZ_out = torch.zeros(self.points_num)
-
-        for i in range(self.frames_num):
-            self.dirX_in[i, 0] = 1
-            self.dirZ_in[i, 1] = 1
-
-        #to cuda
-        self.dirX_in = self.dirX_in.to(self.device)
-        self.dirZ_in = self.dirZ_in.to(self.device)
-        self.dirX_out = self.dirX_out.to(self.device)
-        self.dirZ_out = self.dirZ_out.to(self.device)
-
-        self.rng = numpy.random.default_rng()
-
-        # process X
-        for file in tqdm.tqdm(filesX):
-            dataPath = os.path.join(self.dirX, file)
-            self.dataX.append(torch.load(dataPath).to(self.device))
-            self.dataPathListX.append(dataPath)
-        # process Y
-        for file in tqdm.tqdm(filesY):
-            dataPath = os.path.join(self.dirY, file)
-            self.dataY.append(torch.load(dataPath).to(self.device))
-            self.dataPathListY.append(dataPath)
-
-    def __getitem__(self, index):
-        tensorX = self.dataX[index]
-        tensorY = self.dataY[index]
-
-        # オフセット用ランダムな数を生成
-        offsetX = self.rng.uniform(-5, 5)
-        offsetZ = self.rng.uniform(-5, 5)
-
-        # オフセット生成
-        offsetTensorX = torch.zeros(self.frames_num, self.points_num).to(self.device)
-        offsetTensorY = torch.zeros(self.points_num).to(self.device)
-        offsetTensorX = self.dirX_in * offsetX + self.dirZ_in * offsetZ
-        offsetTensorY = self.dirX_out * offsetX + self.dirZ_out * offsetZ
-        
-        # オフセット追加
-        tensorX = tensorX + offsetTensorX
-        tensorY = tensorY + offsetTensorY
-        
-        # tensorXを(frames_num, points_num)の形状に変形 (必要ないので削除)
-        # tensorX = tensorX.view(self.frames_num, self.points_num)
-        
-        return tensorX, tensorY
-
-    def __len__(self):
-        return len(self.dataPathListX)
-    
-
 class StockPriceDataSet_forLSTM(Dataset):
     def __init__(self, dataDir, points_num, frames_num):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -274,12 +203,14 @@ class StockPriceDataSet_forLSTM(Dataset):
         offsetZ = self.rng.uniform(-5, 5)
 
         # オフセット生成
-        offsetTensorX = torch.zeros(self.frames_num, self.points_num).to(self.device)
-        offsetTensorY = torch.zeros(self.points_num).to(self.device)
-        offsetTensorX = self.dirX_in * offsetX + self.dirZ_in * offsetZ
-        offsetTensorY = self.dirX_out * offsetX + self.dirZ_out * offsetZ
+        offsetTensorX = torch.zeros(self.frames_num, self.points_num)
+        offsetTensorY = torch.zeros(self.points_num)
+        offsetTensorX = (self.dirX_in * offsetX + self.dirZ_in * offsetZ).to(self.device)
+        offsetTensorY = (self.dirX_out * offsetX + self.dirZ_out * offsetZ).to(self.device)
         
         # オフセット追加
+        # print(tensorX.shape)
+        # print(offsetTensorX.shape)
         tensorX = tensorX + offsetTensorX
         tensorY = tensorY + offsetTensorY
         
