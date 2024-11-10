@@ -223,6 +223,7 @@ class SelectedPointsHumanPoseDataFolder_forRNN(Dataset):
 
 class StockPriceDataSet_forLSTM(Dataset):
     def __init__(self, dataDir, points_num, frames_num):
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.points_num = points_num
         self.frames_num = frames_num
         self.dataDir = dataDir
