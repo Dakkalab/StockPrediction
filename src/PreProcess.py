@@ -32,7 +32,7 @@ class PreProcess:
         return len(data)
 
 
-    def preprocess_edit(self, input_path, output_path, frames_num, pred_future_frame, target_cols):
+    def preprocess_LSTM(self, input_path, output_path, frames_num, pred_future_frame, target_cols):
         # フォルダ内のすべてのファイルとディレクトリを取得
 
         files = os.listdir(input_path)
@@ -87,13 +87,12 @@ class PreProcess:
                     if frameIndex + pred_future_frame < len(data):
                         #1フレームをとってきてデータとする
                         strX = data[frameIndex - frames_num : frameIndex]
-                        num_matrix = [[float(value) for value in row] for row in strX]
+                        X = [[float(value) for value in row] for row in strX]
                         #print(strX[0])
                         #predictionFutureFrameフレーム後の未来を持ってきて正解データとする
                         strY = data[frameIndex + pred_future_frame]
-                        numY = [float(value) for value in strY]
+                        Y = [float(value) for value in strY]
                         # print(strY)
-                        X = num_matrix#list(map(float, num_matrix))
                         #flattenX = [elem for sublist in X for elem in sublist]
                         r = random.random()
                         if r < self.train_rate:
@@ -102,8 +101,80 @@ class PreProcess:
                             mode = "Eval"
                         else:
                             mode = "Test"
-                        Y = numY#list(map(float, numY))
                         torch.save(torch.tensor(X),os.path.join(output_path,mode,"X",str(self.dataCount[mode])+".pt"))
                         torch.save(torch.tensor(Y),os.path.join(output_path,mode,"Y",str(self.dataCount[mode])+".pt"))
                         self.dataCount[mode] += 1
 
+    
+    def preprocess_transformer(self, input_path, output_path, frames_num, pred_future_frame, future_frames_num, target_cols):
+        # フォルダ内のすべてのファイルとディレクトリを取得
+
+        files = os.listdir(input_path)
+        target_files = []
+        header = None
+
+
+        for fileIndex in tqdm.tqdm(range(len(files))):
+            # ファイルの絶対パスを取得
+            file_path = os.path.join(input_path, files[fileIndex])
+            with open(file_path, 'r') as csvfile:
+                # CSVファイルを読み込み
+                reader = csv.reader(csvfile)
+                if header is None:
+                    header = next(reader)
+                target_files.append(file_path)
+
+        #カラム指定がある場合
+        if target_cols:
+            column_indices = self.get_column_indices(header, target_cols)
+        
+        if os.path.isdir(output_path) is False:
+            for subPathA in ["Train","Eval","Test"]:
+                for subPathB in ["X","Y"]:
+                    os.makedirs(os.path.join(output_path,subPathA,subPathB))
+
+        # ファイルのリストを作成
+        fileCount = len(target_files)
+        trainCount = int(fileCount * self.train_rate)
+        evalCount = int(fileCount * self.eval_rate)
+        for fileIndex in tqdm.tqdm(range(len(target_files))):
+            # ファイルの絶対パスを取得
+            file_path = target_files[fileIndex]
+            #print(file_path)
+            #データのモード(Train/Eval/Test)を取得
+            #確率的に決定しないと偏る
+            with open(file_path, 'r') as csvfile:
+                # CSVファイルを読み込み
+                reader = csv.reader(csvfile)
+                next(reader) 
+
+                # CSVファイルの内容を二次元配列に変換
+                data = [row for row in reader]
+
+                #カラム指定がある場合
+                if target_cols:
+                    data = [[row[idx] for idx in column_indices] for row in data]
+                    #print(len(data))
+
+                
+                for frameIndex in range(frames_num,len(data)):
+                    if frameIndex + pred_future_frame < len(data):
+                        #1フレームをとってきてデータとする
+                        strX = data[frameIndex - frames_num : frameIndex]
+                        X = [[float(value) for value in row] for row in strX]
+                        #print(strX[0])
+                        #predictionFutureFrameフレーム後の未来を持ってきて正解データとする
+                        strY = data[frameIndex + pred_future_frame : frameIndex + pred_future_frame + future_frames_num]
+                        Y = [float(value) for value in strY]
+                        # print(strY)
+                        #flattenX = [elem for sublist in X for elem in sublist]
+                        r = random.random()
+                        if r < self.train_rate:
+                            mode = "Train"
+                        elif r < self.train_rate + self.eval_rate:
+                            mode = "Eval"
+                        else:
+                            mode = "Test"
+                        torch.save(torch.tensor(X),os.path.join(output_path,mode,"X",str(self.dataCount[mode])+".pt"))
+                        torch.save(torch.tensor(Y),os.path.join(output_path,mode,"Y",str(self.dataCount[mode])+".pt"))
+                        self.dataCount[mode] += 1
